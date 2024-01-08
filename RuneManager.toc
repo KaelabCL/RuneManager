@@ -1,0 +1,9 @@
+## Interface: 11500
+## Version: 0.0.1
+## Title: Rune Manager
+## Notes: Save sets of runes and swap between them.
+## Author: Kaelab
+## SavedVariables: RMDB
+
+embeds.xml
+RuneManager.lua
