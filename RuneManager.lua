@@ -13,6 +13,7 @@ RM.SaveButton = {}
 RM.DeleteButton = {}
 RM.ScrollContainer = {}
 RM.ScrollFrame = {}
+RM.IconSelectionScrollFrame = {}
 RM.RuneButtonContainer = {}
 RM.MacroIcons = {}
 RM.SelectedIcon = {}
@@ -136,9 +137,9 @@ function InitIconSelectionFrame()
     scrollContainer:SetLayout("Fill") -- important!
     RM.IconSelectionFrame:AddChild(scrollContainer)
 
-    local scroll = RM.GUI:Create("ScrollFrame")
-    scroll:SetLayout("Flow") -- probably?
-    scrollContainer:AddChild(scroll)
+    RM.IconSelectionScrollFrame = RM.GUI:Create("ScrollFrame")
+    RM.IconSelectionScrollFrame:SetLayout("Flow") -- probably?
+    scrollContainer:AddChild(RM.IconSelectionScrollFrame)
 
     local confirmButton = RM.GUI:Create("Button")
     confirmButton:SetText("Confirm")
@@ -148,17 +149,26 @@ function InitIconSelectionFrame()
 
     for _, icon in ipairs(RM.MacroIcons) do
         local containerIcon = RM.GUI:Create("Icon")
-        containerIcon:SetWidth(scroll.frame:GetWidth() / 10)
-        containerIcon:SetHeight(scroll.frame:GetWidth() / 10)
+        containerIcon:SetWidth(RM.IconSelectionScrollFrame.frame:GetWidth() / 10)
+        containerIcon:SetHeight(RM.IconSelectionScrollFrame.frame:GetWidth() / 10)
         containerIcon:SetImage(icon)
-        containerIcon:SetImageSize(scroll.frame:GetWidth() / 10 - 3, scroll.frame:GetWidth() / 10 - 3)
+        containerIcon:SetImageSize(RM.IconSelectionScrollFrame.frame:GetWidth() / 10 - 3, RM.IconSelectionScrollFrame.frame:GetWidth() / 10 - 3)
 
-        containerIcon:SetCallback("OnClick", function() 
+        local overlay = containerIcon.frame:CreateTexture(nil, "OVERLAY")
+        overlay:SetAllPoints(containerIcon["image"])
+        overlay:SetTexture(130723) -- Interface\\PaperDollInfoFrame\\UI-Character-Tab-Highlight
+        overlay:SetTexCoord(0.23, 0.77, 0.23, 0.77)
+        overlay:SetBlendMode("ADD")
+        
+        containerIcon["RMoverlay"] = overlay
+        overlay:Hide()
+
+        containerIcon:SetCallback("OnClick", function(widget) 
             RM.SelectedIcon = icon
-            -- containerIcon:SetHighlightTexture(icon)
-            -- containerIcon:GetHighlightTexture():SetAlpha(0.5)
+            HideAllOverlaysInIconSelectionFrame()
+            ShowOverlay(widget)
         end)
-        scroll:AddChild(containerIcon)
+        RM.IconSelectionScrollFrame:AddChild(containerIcon)
     end
 
     editbox:SetCallback("OnEnterPressed", function(widget, event, text) editbox:SetUserData("text", text) confirmButton:SetDisabled(false) end)
@@ -193,6 +203,12 @@ end
 function HideAllOverlaysInScrollFrame()
     for i=1, #RM.ScrollFrame.children do
         HideOverlay(RM.ScrollFrame.children[i])
+    end
+end
+
+function HideAllOverlaysInIconSelectionFrame()
+    for i=1, #RM.IconSelectionScrollFrame.children do
+        HideOverlay(RM.IconSelectionScrollFrame.children[i])
     end
 end
 
@@ -254,6 +270,7 @@ end
 
 function OnConfirmButtonClicked(text) 
     HideAllOverlaysInScrollFrame()
+    HideAllOverlaysInIconSelectionFrame()
 
     RM.CurrentSetEntry:SetLabel(text)
     RM.CurrentSetEntry["RMlabel"] = text
@@ -304,6 +321,7 @@ end
 
 function OnRuneApplyButtonClicked(rune)
     HideAllOverlaysInScrollFrame()
+
 
     if not InCombatLockdown()
     and not UnitIsDeadOrGhost("player")
