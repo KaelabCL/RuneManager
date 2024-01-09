@@ -13,6 +13,7 @@ RM.SaveButton = {}
 RM.DeleteButton = {}
 RM.ScrollContainer = {}
 RM.ScrollFrame = {}
+RM.IconSelectionScrollFrame = {}
 RM.RuneButtonContainer = {}
 RM.MacroIcons = {}
 RM.SelectedIcon = {}
@@ -61,6 +62,7 @@ function OnEngravingModeChanged()
     end
 end
 
+-- Init functions
 function InitRMFrame()
     RM.RMContainer = RM.GUI:Create("Frame")
     local charFrame = CharacterFrame
@@ -135,9 +137,9 @@ function InitIconSelectionFrame()
     scrollContainer:SetLayout("Fill") -- important!
     RM.IconSelectionFrame:AddChild(scrollContainer)
 
-    local scroll = RM.GUI:Create("ScrollFrame")
-    scroll:SetLayout("Flow") -- probably?
-    scrollContainer:AddChild(scroll)
+    RM.IconSelectionScrollFrame = RM.GUI:Create("ScrollFrame")
+    RM.IconSelectionScrollFrame:SetLayout("Flow") -- probably?
+    scrollContainer:AddChild(RM.IconSelectionScrollFrame)
 
     local confirmButton = RM.GUI:Create("Button")
     confirmButton:SetText("Confirm")
@@ -147,17 +149,26 @@ function InitIconSelectionFrame()
 
     for _, icon in ipairs(RM.MacroIcons) do
         local containerIcon = RM.GUI:Create("Icon")
-        containerIcon:SetWidth(scroll.frame:GetWidth() / 10)
-        containerIcon:SetHeight(scroll.frame:GetWidth() / 10)
+        containerIcon:SetWidth(RM.IconSelectionScrollFrame.frame:GetWidth() / 10)
+        containerIcon:SetHeight(RM.IconSelectionScrollFrame.frame:GetWidth() / 10)
         containerIcon:SetImage(icon)
-        containerIcon:SetImageSize(scroll.frame:GetWidth() / 10 - 3, scroll.frame:GetWidth() / 10 - 3)
+        containerIcon:SetImageSize(RM.IconSelectionScrollFrame.frame:GetWidth() / 10 - 3, RM.IconSelectionScrollFrame.frame:GetWidth() / 10 - 3)
 
-        containerIcon:SetCallback("OnClick", function() 
+        local overlay = containerIcon.frame:CreateTexture(nil, "OVERLAY")
+        overlay:SetAllPoints(containerIcon["image"])
+        overlay:SetTexture(130723) -- Interface\\PaperDollInfoFrame\\UI-Character-Tab-Highlight
+        overlay:SetTexCoord(0.23, 0.77, 0.23, 0.77)
+        overlay:SetBlendMode("ADD")
+        
+        containerIcon["RMoverlay"] = overlay
+        overlay:Hide()
+
+        containerIcon:SetCallback("OnClick", function(widget) 
             RM.SelectedIcon = icon
-            -- containerIcon:SetHighlightTexture(icon)
-            -- containerIcon:GetHighlightTexture():SetAlpha(0.5)
+            HideAllOverlaysInIconSelectionFrame()
+            ShowOverlay(widget)
         end)
-        scroll:AddChild(containerIcon)
+        RM.IconSelectionScrollFrame:AddChild(containerIcon)
     end
 
     editbox:SetCallback("OnEnterPressed", function(widget, event, text) editbox:SetUserData("text", text) confirmButton:SetDisabled(false) end)
@@ -167,6 +178,8 @@ function InitIconSelectionFrame()
     RM.IconSelectInit = true
 end
 
+-- Show/Hide functions
+
 function ShowRMFrame()
     RM.RMContainer:Show()
 end
@@ -175,23 +188,31 @@ function ShowIconFrame()
     RM.IconSelectionFrame:Show()
 end
 
-function OnSaveClicked()
-    RM:Print("Save button clicked")
-    local setEntry = RM.GUI:Create("Icon")
-    setEntry:SetWidth(RM.ScrollFrame.frame:GetWidth() / 5)
-    setEntry:SetHeight(RM.ScrollFrame.frame:GetWidth() / 5)
-    setEntry:SetImage("Interface\\ICONS\\INV_Misc_QuestionMark")
-    setEntry:SetImageSize(40, 40)
-    setEntry:SetLabel("Rune Set")
-
-    RM.DeleteButton:SetDisabled(true)
-    RM.CurrentSetEntry = setEntry
-
-    ShowIconFrame()
-
-    setEntry:SetCallback("OnClick", function(widget) OnSetEntryClicked(widget) end)
+function ShowOverlay(widget)
+    if widget["RMoverlay"] then
+        widget["RMoverlay"]:Show()
+    end
 end
 
+function HideOverlay(widget)
+    if widget["RMoverlay"] then
+        widget["RMoverlay"]:Hide()
+    end
+end
+
+function HideAllOverlaysInScrollFrame()
+    for i=1, #RM.ScrollFrame.children do
+        HideOverlay(RM.ScrollFrame.children[i])
+    end
+end
+
+function HideAllOverlaysInIconSelectionFrame()
+    for i=1, #RM.IconSelectionScrollFrame.children do
+        HideOverlay(RM.IconSelectionScrollFrame.children[i])
+    end
+end
+
+-- Get rune loadout functions
 function GetLoadout()
     local loadout = {}
     --TODO: First get categories for all runes and pass to this function as a table of category numbers
@@ -212,29 +233,45 @@ function GetLoadoutFromSavedSet(savedSet)
     return loadout
 end
 
-function UpdateRMScrollFrame()
-    RM.ScrollFrame:ReleaseChildren()
-    if #RM.SavedSets > 0 then
-        for i=1, #RM.SavedSets do
-            local setEntry = RM.GUI:Create("Icon")
-            setEntry:SetWidth(RM.ScrollFrame.frame:GetWidth() / 5)
-            setEntry:SetHeight(RM.ScrollFrame.frame:GetWidth() / 5)
-            setEntry:SetImage(RM.SavedSets[i]["RMimage"])
-            setEntry["RMimage"] = RM.SavedSets[i]["RMimage"]
-            setEntry:SetImageSize(40, 40)
-            setEntry:SetLabel(RM.SavedSets[i]["RMlabel"])
-            setEntry["RMlabel"] = RM.SavedSets[i]["RMlabel"]
-            setEntry["RMloadout"] = RM.SavedSets[i]["RMloadout"]
-            setEntry:SetCallback("OnClick", function(setEntry) OnSetEntryClicked(setEntry) end)
-            RM.ScrollFrame:AddChild(setEntry)
-        end
-    end
-    RM.CurrentSetEntry = nil
+-- Create overlay on widget
+function CreateOverlay(widget)
+    local overlay = widget.frame:CreateTexture(nil, "OVERLAY")
+    overlay:SetAllPoints(widget["image"])
+    overlay:SetTexture(130723) -- Interface\\PaperDollInfoFrame\\UI-Character-Tab-Highlight
+    overlay:SetTexCoord(0.23, 0.77, 0.23, 0.77)
+    overlay:SetBlendMode("ADD")
+    
+    widget["RMoverlay"] = overlay
+    overlay:Hide()
+end
+
+-- Callback functions
+function OnSaveClicked()
+    HideAllOverlaysInScrollFrame()
+
+    RM:Print("Save button clicked")
+    local setEntry = RM.GUI:Create("Icon")
+    setEntry:SetWidth(RM.ScrollFrame.frame:GetWidth() / 5)
+    setEntry:SetHeight(RM.ScrollFrame.frame:GetWidth() / 5)
+    setEntry:SetImage("Interface\\ICONS\\INV_Misc_QuestionMark")
+    setEntry:SetImageSize(40, 40)
+    setEntry:SetLabel("Rune Set")
+
+    CreateOverlay(setEntry)
+    
+    RM.DeleteButton:SetDisabled(true)
+    RM.CurrentSetEntry = setEntry
+
+    ShowIconFrame()
+       
+    setEntry:SetCallback("OnClick", function(widget) OnSetEntryClicked(widget) end)
 end
 
 
-
 function OnConfirmButtonClicked(text) 
+    HideAllOverlaysInScrollFrame()
+    HideAllOverlaysInIconSelectionFrame()
+
     RM.CurrentSetEntry:SetLabel(text)
     RM.CurrentSetEntry["RMlabel"] = text
     if RM.SelectedIcon then
@@ -249,6 +286,7 @@ function OnConfirmButtonClicked(text)
     savedSet["RMimage"] = RM.CurrentSetEntry["RMimage"]
     savedSet["RMloadout"] = RM.CurrentSetEntry["RMloadout"]
 
+
     tinsert(RM.SavedSets, savedSet)
 
     RM.IconSelectionFrame:Hide()
@@ -261,6 +299,9 @@ function OnSetEntryClicked(setEntry)
     -- TODO: Make tooltips when hovering over runeApplyButtons that show the skill 
     -- TODO: Make rune set highlighted upon click
     RM.RuneButtonContainer:ReleaseChildren()
+    HideAllOverlaysInScrollFrame()
+
+    ShowOverlay(setEntry)
 
     for i=1, #setEntry["RMloadout"] do
         local runeApplyButton = RM.GUI:Create("Icon")
@@ -279,6 +320,9 @@ function OnSetEntryClicked(setEntry)
 end
 
 function OnRuneApplyButtonClicked(rune)
+    HideAllOverlaysInScrollFrame()
+
+
     if not InCombatLockdown()
     and not UnitIsDeadOrGhost("player")
     and not UnitCastingInfo("player")
@@ -305,6 +349,8 @@ function OnRuneApplyButtonClicked(rune)
 end
 
 function OnDeleteSetClicked(setEntry)
+    HideAllOverlaysInScrollFrame()
+
     RM.DeleteButton:SetDisabled(true)
     RM.RuneButtonContainer:ReleaseChildren()
 
@@ -317,6 +363,31 @@ function OnDeleteSetClicked(setEntry)
     UpdateRMScrollFrame()
 end
 
+-- Refresh the scroll frame after a delete or at addon initialization
+function UpdateRMScrollFrame()
+    RM.ScrollFrame:ReleaseChildren()
+    if #RM.SavedSets > 0 then
+        for i=1, #RM.SavedSets do
+            local setEntry = RM.GUI:Create("Icon")
+            setEntry:SetWidth(RM.ScrollFrame.frame:GetWidth() / 5)
+            setEntry:SetHeight(RM.ScrollFrame.frame:GetWidth() / 5)
+            setEntry:SetImage(RM.SavedSets[i]["RMimage"])
+            setEntry["RMimage"] = RM.SavedSets[i]["RMimage"]
+            setEntry:SetImageSize(40, 40)
+            setEntry:SetLabel(RM.SavedSets[i]["RMlabel"])
+            setEntry["RMlabel"] = RM.SavedSets[i]["RMlabel"]
+            setEntry["RMloadout"] = RM.SavedSets[i]["RMloadout"]
+
+            CreateOverlay(setEntry)
+
+            setEntry:SetCallback("OnClick", function(widget) OnSetEntryClicked(widget) end)
+            RM.ScrollFrame:AddChild(setEntry)
+        end
+    end
+    RM.CurrentSetEntry = nil
+end
+
+-- Persist data
 function SaveSetsToDB()
     RM.DB.char.savedSets = RM.SavedSets
 end
