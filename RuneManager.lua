@@ -1,7 +1,6 @@
 -- Ace requirements for addon setupRMScrollFrame
 RM = LibStub("AceAddon-3.0"):NewAddon("RuneManager", "AceConsole-3.0")
 RM.Event = LibStub("AceEvent-3.0")
---RM.Hook = LibStub("AceHook-3.0")
 RM.GUI = LibStub("AceGUI-3.0")
 RM.CBH = LibStub("CallbackHandler-1.0")
 
@@ -19,12 +18,13 @@ RM.MacroIcons = {}
 RM.SelectedIcon = {}
 RM.SavedSets = {}
 RM.CurrentSetEntry = nil
+RM.RuneCategories = {}
 
 function RM:OnInitialize()
     -- TODO: Restore saved settings, etc
-    RM:Print("Rune Manager loaded.") --TODO: Turn off when done debugging
-    RM:RegisterChatCommand("rune", SlashTest)
+    --RM:Print("Rune Manager loaded.") --TODO: Turn off when done debugging
     GetMacroIcons(RM.MacroIcons)
+    GetRuneCategories()
     RM.DB = LibStub("AceDB-3.0"):New("RMDB")
     RM.DB.callbacks = RM.DB.callbacks or LibStub("CallbackHandler-1.0"):New(RM.DB)
     RM.DB.RegisterCallback(RM.DB, "OnDatabaseShutdown", SaveSetsToDB)
@@ -43,12 +43,7 @@ function RM:OnDisable()
     RM.Event:UnregisterEvent("ENGRAVING_MODE_CHANGED")
 end
 
--- Unused for now
-function SlashTest(input)
-    RM:Print("Success")
-    RM:Print(input)
-end
-
+-- Check if engraving frame is loaded and then init 
 function OnEngravingModeChanged()
     if C_AddOns.IsAddOnLoaded("Blizzard_EngravingUI") then
         if RM.Init == false then
@@ -212,14 +207,16 @@ function HideAllOverlaysInIconSelectionFrame()
     end
 end
 
--- Get rune loadout functions
+-- Rune loadout functions
+function GetRuneCategories()
+    RM.RuneCategories = C_Engraving.GetRuneCategories(false, false)
+end
+
 function GetLoadout()
     local loadout = {}
-    --TODO: First get categories for all runes and pass to this function as a table of category numbers
-    -- then, iterate through that table's values, replacing the numbers in the parameters below with "i"
-    tinsert(loadout, C_Engraving.GetRuneForEquipmentSlot(5))
-    tinsert(loadout, C_Engraving.GetRuneForEquipmentSlot(7))
-    tinsert(loadout, C_Engraving.GetRuneForEquipmentSlot(10))
+    for i=1, #RM.RuneCategories do
+        tinsert(loadout, C_Engraving.GetRuneForEquipmentSlot(RM.RuneCategories[i]))
+    end
 
     return loadout
 end
@@ -286,12 +283,9 @@ function OnConfirmButtonClicked(text)
     savedSet["RMimage"] = RM.CurrentSetEntry["RMimage"]
     savedSet["RMloadout"] = RM.CurrentSetEntry["RMloadout"]
 
-
     tinsert(RM.SavedSets, savedSet)
 
     RM.IconSelectionFrame:Hide()
-
-    -- TODO: Save the state of the Rune Manager via Ace
 end
 
 function OnSetEntryClicked(setEntry)
