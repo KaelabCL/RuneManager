@@ -19,6 +19,7 @@ RM.SelectedIcon = {}
 RM.SavedSets = {}
 RM.CurrentSetEntry = nil
 RM.RuneCategories = {}
+RM.Tooltip = nil
 
 function RM:OnInitialize()
     -- TODO: Restore saved settings, etc
@@ -102,6 +103,8 @@ function InitRMFrame()
     RM.RuneButtonContainer:SetHeight(RM.RMContainer.frame:GetHeight() / 2)
     RM.RuneButtonContainer:SetLayout("Flow")
     RM.RMContainer:AddChild(RM.RuneButtonContainer)
+
+    RM.Tooltip = CreateFrame("GameTooltip", "RM.Tooltip", UIParent, "GameTooltipTemplate")
 
     RM.SaveButton:SetCallback("OnClick", function() OnSaveClicked() end)
 
@@ -187,6 +190,18 @@ function ShowOverlay(widget)
     if widget["RMoverlay"] then
         widget["RMoverlay"]:Show()
     end
+end
+
+function ShowRuneTooltip(widget, rune)
+    --TODO: Find a way to make it show the same tooltip that Blizzard's EngravingFrame shows when hovering over a rune button
+    RM.Tooltip:SetOwner(widget.frame, "ANCHOR_TOPLEFT")
+    RM.Tooltip:ClearLines()
+    RM.Tooltip:AddLine(rune.name, 1, 1, 1)
+    RM.Tooltip:Show()
+end
+
+function HideRuneTooltip()
+    RM.Tooltip:Hide()
 end
 
 function HideOverlay(widget)
@@ -302,6 +317,8 @@ function OnSetEntryClicked(setEntry)
         runeApplyButton:SetImage(setEntry["RMloadout"][i].iconTexture)
         runeApplyButton:SetImageSize(25, 25)
         runeApplyButton:SetCallback("OnClick", function() OnRuneApplyButtonClicked(setEntry["RMloadout"][i]) end)
+        runeApplyButton:SetCallback("OnEnter", function(widget) ShowRuneTooltip(widget, setEntry["RMloadout"][i]) end)
+        runeApplyButton:SetCallback("OnLeave", function() HideRuneTooltip() end)
         RM.RuneButtonContainer:AddChild(runeApplyButton)
     end
 
