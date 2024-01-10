@@ -246,7 +246,6 @@ end
 function OnSaveClicked()
     HideAllOverlaysInScrollFrame()
 
-    RM:Print("Save button clicked")
     local setEntry = RM.GUI:Create("Icon")
     setEntry:SetWidth(RM.ScrollFrame.frame:GetWidth() / 5)
     setEntry:SetHeight(RM.ScrollFrame.frame:GetWidth() / 5)
@@ -289,7 +288,6 @@ function OnConfirmButtonClicked(text)
 end
 
 function OnSetEntryClicked(setEntry)
-    --RM:Print("Chest: " .. setEntry["RMloadout"]["CHESTSLOT"].name .. " ---- Pants: " .. setEntry["RMloadout"]["LEGSSLOT"].name .. " ---- Gloves: " .. setEntry["RMloadout"]["HANDSSLOT"].name)
     -- TODO: Make tooltips when hovering over runeApplyButtons that show the skill 
     -- TODO: Make rune set highlighted upon click
     RM.RuneButtonContainer:ReleaseChildren()
@@ -314,9 +312,6 @@ function OnSetEntryClicked(setEntry)
 end
 
 function OnRuneApplyButtonClicked(rune)
-    HideAllOverlaysInScrollFrame()
-
-
     if not InCombatLockdown()
     and not UnitIsDeadOrGhost("player")
     and not UnitCastingInfo("player")
